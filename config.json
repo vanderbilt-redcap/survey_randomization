@@ -1,0 +1,109 @@
+{
+	"name": "SurveyRandomization",
+
+	"namespace": "Randomization\\SurveyRandomization",
+
+	"description": "Randomize piped survey values using another REDCap project as your randomization table including using participant demographics",
+
+	"documentation": "README.md",
+
+	"authors": [
+		{
+			"name": "Kyle McGuffin",
+			"email": "kyle.mcguffin@vumc.org",
+			"institution": "Vanderbilt University Medical Center"
+		}
+	],
+
+	"permissions": [
+		"redcap_save_record"
+	],
+	
+	"enable-every-page-hooks-on-system-pages": false,	
+
+	"links": {
+		"project": [
+			{
+				"name": "Data Export",
+				"icon": "report",
+				"url": "data_export.php"
+			}
+		],
+		"control-center": [
+
+		]
+	},
+
+	"no-auth-pages": [
+
+	],
+
+	"project-settings": [
+		{
+			"key": "randomization_project",
+			"name": "Randomization Project",
+			"type": "project-id"
+		},
+		{
+			"key": "this_record_field",
+			"name": "Random Record Matching Field",
+			"type": "field-list"
+		},
+		{
+			"key": "that_record_field",
+			"name": "Random Record Matching Field on Randomization Project",
+			"type": "text"
+		},
+		{
+			"key": "random_mapping",
+			"name": "Randomization Import Mapping",
+			"type": "sub_settings",
+			"repeatable": true,
+			"sub_settings": [
+				{
+					"key": "this_mapped_field",
+					"name": "This Project Field",
+					"type": "field-list"
+				},
+				{
+					"key": "that_mapped_field",
+					"name": "Randomization Project Field",
+					"type": "text"
+				}
+			]
+		},
+		{
+			"key": "random_demographics",
+			"name": "Randomization Demographics Mapping",
+			"type": "sub_settings",
+			"repeatable": true,
+			"sub_settings": [
+				{
+					"key": "this_demo_field",
+					"name": "This Project Field",
+					"type": "field-list"
+				},
+				{
+					"key": "that_demo_field",
+					"name": "Randomization Project Field",
+					"type": "text"
+				}
+			]
+		}
+	],
+
+	"system-settings": [
+
+	],
+
+	"crons": [
+
+	],
+
+	"compatibility": {
+		"php-version-min": "",
+		"php-version-max": "",
+		"redcap-version-min": "",
+		"redcap-version-max": ""
+	}
+}
