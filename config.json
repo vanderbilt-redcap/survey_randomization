@@ -69,6 +69,24 @@
 					"key": "that_mapped_field",
 					"name": "Randomization Project Field",
 					"type": "text"
+				},
+				{
+					"key": "alternate_mapping",
+					"name": "Alternate Field Mapping",
+					"type": "sub_settings",
+					"repeatable": true,
+					"sub_settings": [
+						{
+							"key": "randomization_value",
+							"name": "Randomization Value",
+							"type": "text"
+						},
+						{
+							"key": "mapped_value",
+							"name": "Mapped Value",
+							"type": "text"
+						}
+					]
 				}
 			]
 		},

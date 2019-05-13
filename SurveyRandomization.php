@@ -24,6 +24,17 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 
 		$this->randomProject = $this->getProjectSetting("randomization_project");
 
+		$randomizationMappingInput = $this->getProjectSetting("randomization_value");
+		$randomizationMappingOutput = $this->getProjectSetting("mapped_value");
+
+		$randomizationMapping = [];
+
+		foreach($randomizedField as $fieldId => $fieldName) {
+			foreach($randomizationMappingInput[$fieldId] as $mappingId => $mappingInput) {
+				$randomizationMapping[$fieldName][$mappingInput] = $randomizationMappingOutput[$fieldId][$mappingId];
+			}
+		}
+
 		## Check to make sure project is configured before continuing
 		if($this->randomProject == "" || $randomizedField == "" || $this->randomizedField == ""
 				|| count($randomMappedFields) == 0) {
@@ -34,7 +45,6 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 
 		$readyToRandomize = true;
 		$demoValues = [];
-		$mappedValues = [];
 
 		## Check if record is ready to randomize
 		foreach($recordData as $recordId => $recordDetails) {
@@ -97,7 +107,7 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 
 				## This is a record with the same demographics values and which hasn't
 				## yet been used for randomization
-				if($this->randomizeUsingRecord($randomizationRecord,$randomizationEvent,$record,$project_id)) {
+				if($this->randomizeUsingRecord($randomizationRecord,$randomizationEvent,$record,$project_id,$event_id)) {
 					$chosenRandomizationRecord = $randomizationRecord;
 					break;
 				}
@@ -105,11 +115,32 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 
 
 			## Now perform the randomized mapping and copy that data into the record
+			$randomizationData = $this->getData($this->randomProject,$chosenRandomizationRecord);
+			$mappedData = [];
 
+			foreach($randomizationData as $recordId => $recordDetails) {
+				foreach($recordDetails as $eventId => $eventDetails) {
+					foreach($randomMappedFields as $fieldId => $fieldName) {
+						if($eventDetails[$fieldName] != "") {
+							$randomizedValue = $eventDetails[$fieldName];
+
+							if(array_key_exists($fieldName,$randomizationMapping) && array_key_exists($randomizedValue,$randomizationMapping[$fieldName])) {
+								$randomizedValue = $randomizationMapping[$fieldName][$randomizedValue];
+							}
+
+							$mappedData[$mappedFields[$fieldId]] = $randomizedValue;
+						}
+					}
+				}
+			}
+
+			$results = $this->saveData($project_id,$record,$event_id,$mappedData);
+
+			error_log("Randomization: Save Mapping: ".var_export($results,true));
 		}
 	}
 
-	function randomizeUsingRecord($randomizationRecord,$randomizationEvent,$thisRecord,$thisProject) {
+	function randomizeUsingRecord($randomizationRecord,$randomizationEvent,$thisRecord,$thisProject,$thisEvent) {
 		## Double-check that record is still available
 		$randomizationCheckSql = "SELECT *
 				FROM redcap_data
@@ -143,10 +174,15 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 			usleep(rand(1000,30000));
 
 			## Re-attempt to randomize using the same record
-			return $this->randomizeUsingRecord($randomizationRecord,$randomizationEvent,$thisRecord,$thisProject);
+			return $this->randomizeUsingRecord($randomizationRecord,$randomizationEvent,$thisRecord,$thisProject,$thisEvent);
 		}
 		else {
 			## Still need to save this record to the participant record
+			$recordField = $this->getProjectSetting("this_record_field");
+
+			$results = $this->saveData($thisProject,$thisRecord,$thisEvent,[$recordField => $randomizationRecord]);
+
+			error_log("Randomization: Hold Record: ".var_export($results,true));
 
 			return true;
 		}
