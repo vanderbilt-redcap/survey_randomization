@@ -26,6 +26,8 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 
 		$randomizationMappingInput = $this->getProjectSetting("randomization_value");
 		$randomizationMappingOutput = $this->getProjectSetting("mapped_value");
+		$randomizationCalculations = $this->getProjectSetting("calculation_value");
+		$randomizationCalculationFields = $this->getProjectSetting("calculation_mapping_output");
 
 		$randomizationMapping = [];
 
@@ -49,7 +51,10 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 		## Check if record is ready to randomize
 		foreach($recordData as $recordId => $recordDetails) {
 			foreach($recordDetails as $eventId => $eventDetails) {
+
+				error_log("Randomization: Is $randomizedField already ".$eventDetails[$randomizedField]);
 				if($eventDetails[$randomizedField] != "") {
+					error_log("Randomization: Already Randomized Breaking");
 					$readyToRandomize = false;
 					break 2;
 				}
@@ -58,6 +63,7 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 				foreach($demoFields as $fieldName) {
 					if(array_key_exists($fieldName,$eventDetails)) {
 						if($eventDetails[$fieldName] === "") {
+							error_log("Randomization: Not ready to be Randomized Breaking");
 							$readyToRandomize = false;
 							break 3;
 						}
@@ -95,7 +101,7 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 			$chosenRandomizationRecord = false;
 
 			foreach($randomizationData as $randomizationRecord => $recordDetails) {
-				if($recordDetails[$this->randomizedField] != "") {
+				if($recordDetails[$this->randomizedField] != "" && $recordDetails[$this->randomizedField] != $record) {
 					continue;
 				}
 
@@ -116,19 +122,41 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 
 			## Now perform the randomized mapping and copy that data into the record
 			$randomizationData = $this->getData($this->randomProject,$chosenRandomizationRecord);
+			$randomizedOutput = [];
 			$mappedData = [];
 
-			foreach($randomizationData as $recordId => $recordDetails) {
-				foreach($recordDetails as $eventId => $eventDetails) {
-					foreach($randomMappedFields as $fieldId => $fieldName) {
-						if($eventDetails[$fieldName] != "") {
-							$randomizedValue = $eventDetails[$fieldName];
+			foreach($randomMappedFields as $randomIndex => $fieldName) {
+				$outputField = $mappedFields[$randomIndex];
 
-							if(array_key_exists($fieldName,$randomizationMapping) && array_key_exists($randomizedValue,$randomizationMapping[$fieldName])) {
-								$randomizedValue = $randomizationMapping[$fieldName][$randomizedValue];
-							}
+				$randomizedOutput[$outputField] = $randomizationData[$chosenRandomizationRecord][$randomizationEvent][$fieldName];
+			}
 
-							$mappedData[$mappedFields[$fieldId]] = $randomizedValue;
+			$results = $this->saveData($project_id,$record,$event_id,$randomizedOutput);
+
+			if(count($results['errors']) > 0) {
+				error_log("Randomization: Save Randomized Data: ".var_export($results,true));
+			}
+
+			foreach($randomizationCalculations as $mappingIndex => $mappingDetails) {
+				foreach($mappingDetails as $calcIndex => $calculation) {
+					$outputField = $randomizationCalculationFields[$mappingIndex][$calcIndex];
+
+					$calculation = preg_replace_callback("/\\[([a-z\\_0-9]+)\\]/",function($matches) use ($randomizedOutput) {
+						return ($randomizedOutput[$matches[1]] == "" ? "''" : $randomizedOutput[$matches[1]]);
+					},$calculation);
+
+					$calculation = str_replace(" or ", ") || (", $calculation);
+					$calculation = str_replace(" and ", ") && (", $calculation);
+					$calculation = $calculation == "" ? "" : "(" . $calculation . ")";
+
+					$parser = new \LogicParser();
+					list($logicCode) = $parser->parse($calculation);
+
+					$calculation = call_user_func_array($logicCode, array());
+
+					foreach($randomizationMappingInput[$mappingIndex] as $calcMappingIndex => $mappedInput) {
+						if($mappedInput == $calculation) {
+							$mappedData[$outputField] = $randomizationMappingOutput[$mappingIndex][$calcMappingIndex];
 						}
 					}
 				}
@@ -136,7 +164,9 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 
 			$results = $this->saveData($project_id,$record,$event_id,$mappedData);
 
-			error_log("Randomization: Save Mapping: ".var_export($results,true));
+			if(count($results['errors']) > 0) {
+				error_log("Randomization: Save Mapped Data: ".var_export($results,true));
+			}
 		}
 	}
 
@@ -156,6 +186,10 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 
 		## Attempt to save the randomization value
 		$results = $this->saveData($this->randomProject,$randomizationRecord,$randomizationEvent,[$this->randomizedField => $thisRecord]);
+
+		if(count($results['errors']) > 0) {
+			error_log("Randomization: Save Randomization Record: ".var_export($results,true));
+		}
 
 		## Check to make sure that's still the only record attached to this randomization
 		$q = $this->query($randomizationCheckSql);
@@ -182,7 +216,9 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 
 			$results = $this->saveData($thisProject,$thisRecord,$thisEvent,[$recordField => $randomizationRecord]);
 
-			error_log("Randomization: Hold Record: ".var_export($results,true));
+			if(count($results['errors']) > 0) {
+				error_log("Randomization: Hold Record: ".var_export($results,true));
+			}
 
 			return true;
 		}

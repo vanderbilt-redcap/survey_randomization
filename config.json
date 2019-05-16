@@ -69,16 +69,42 @@
 					"key": "that_mapped_field",
 					"name": "Randomization Project Field",
 					"type": "text"
+				}
+			]
+		},
+		{
+			"key": "post_randomization_mapping",
+			"name": "Post Randomization Calculations",
+			"type": "sub_settings",
+			"repeatable": true,
+			"sub_settings": [
+				{
+					"key": "calc_field_mapping",
+					"name": "Calc to Output Fields",
+					"type": "sub_settings",
+					"repeatable": true,
+					"sub_settings": [
+						{
+							"key": "calculation_value",
+							"name": "Randomized Value Calculation",
+							"type": "text"
+						},
+						{
+							"key": "calculation_mapping_output",
+							"name": "Field to Output Calculation",
+							"type": "field-list"
+						}
+					]
 				},
 				{
 					"key": "alternate_mapping",
-					"name": "Alternate Field Mapping",
+					"name": "Calculation Field Mapping",
 					"type": "sub_settings",
 					"repeatable": true,
 					"sub_settings": [
 						{
 							"key": "randomization_value",
-							"name": "Randomization Value",
+							"name": "Calculation Value",
 							"type": "text"
 						},
 						{
