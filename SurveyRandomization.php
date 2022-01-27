@@ -12,7 +12,7 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 		// Other code to run when object is instantiated
 	}
 	
-	public function redcap_save_record( int $project_id, string $record = NULL, string $instrument, int $event_id, int $group_id, string $survey_hash = NULL, int $response_id, int $repeat_instance ) {
+	public function redcap_save_record($project_id, $record, $instrument, $event_id, $group_id, $survey_hash, $response_id, $repeat_instance ) {
 		$demoFields = $this->getProjectSetting("this_demo_field");
 		$randomDemoFields = $this->getProjectSetting("that_demo_field");
 
@@ -29,6 +29,11 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 		$randomizationCalculations = $this->getProjectSetting("calculation_value");
 		$randomizationCalculationFields = $this->getProjectSetting("calculation_mapping_output");
 
+		if(count($demoFields) == 0 || count($mappedFields) == 0 || count($randomizedField) == 0 || !$this->randomProject) {
+			## Module has not been fully configured yet
+			return;
+		}
+		
 		$randomizationMapping = [];
 
 		foreach($randomizedField as $fieldId => $fieldName) {
