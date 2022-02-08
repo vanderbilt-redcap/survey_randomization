@@ -144,6 +144,10 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 
 			foreach($randomizationCalculations as $mappingIndex => $mappingDetails) {
 				foreach($mappingDetails as $calcIndex => $calculation) {
+					## Skip empty calculations
+					if(empty($calculation)) {
+						continue;
+					}
 					$outputField = $randomizationCalculationFields[$mappingIndex][$calcIndex];
 
 					$calculation = preg_replace_callback("/\\[([a-z\\_0-9]+)\\]/",function($matches) use ($randomizedOutput) {
@@ -167,7 +171,9 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 				}
 			}
 
-			$results = $this->saveData($project_id,$record,$event_id,$mappedData);
+			if(count($mappedData) > 0) {
+				$results = $this->saveData($project_id,$record,$event_id,$mappedData);
+			}
 
 			if(count($results['errors']) > 0) {
 				error_log("Randomization: Save Mapped Data: ".var_export($results,true));
