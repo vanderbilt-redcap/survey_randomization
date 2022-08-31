@@ -29,7 +29,10 @@ class SurveyRandomization extends \ExternalModules\AbstractExternalModule {
 		$randomizationCalculations = $this->getProjectSetting("calculation_value");
 		$randomizationCalculationFields = $this->getProjectSetting("calculation_mapping_output");
 
-		if(count($demoFields) == 0 || count($mappedFields) == 0 || count($randomizedField) == 0 || !$this->randomProject) {
+		if(count($demoFields) == 0 ||
+				count($mappedFields) == 0 ||
+				$randomizedField == "" ||
+				!$this->randomProject) {
 			## Module has not been fully configured yet
 			return;
 		}
